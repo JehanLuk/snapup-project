@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "640562723988",
+    "project_id": "snapup-project-30",
+    "storage_bucket": "snapup-project-30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640562723988:android:5c7d8d09cd1030ed760881",
+        "android_client_info": {
+          "package_name": "com.example.snapupnoteproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSKkL8D7rPCCvIGYoHujKnVcMqPOYo_V0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
