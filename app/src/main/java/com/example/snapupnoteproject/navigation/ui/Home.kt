@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -26,49 +27,61 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HomeScreen () {
-    Scaffold (
-        content = { pad ->
-
-            Column (
+fun HomeScreen() {
+    Scaffold(
+        floatingActionButton = {
+            IconButton(
+                onClick = { /* TODO: abrir tela de criação */ },
                 modifier = Modifier
-                    .padding(pad)
-                    .fillMaxSize()
-            ){
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .background(MaterialTheme.colorScheme.surface),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = "Meus Cards",
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
-
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
+                    .padding(16.dp)
+                    .height(56.dp)
+                    .width(56.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(140, 180, 20))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Adicionar novo card",
+                    tint = Color.White
                 )
-
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier
-                        .border(
-                            width = 2.dp,
-                            Color(140, 180, 20),
-                            shape = RoundedCornerShape(32.dp)
-                        )
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Adicionar um novo card"
-                    )
-                }
             }
         }
-    )
+    ) { pad ->
+        Column(
+            modifier = Modifier
+                .padding(pad)
+                .fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = "Meus Cards",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Sua lista de lembranças está vazia!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(90, 90, 90)
+                )
+            }
+        }
+    }
 }
