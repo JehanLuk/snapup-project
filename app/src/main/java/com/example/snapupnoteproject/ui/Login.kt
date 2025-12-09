@@ -1,16 +1,13 @@
-package com.example.snapupnoteproject.navigation.ui
+package com.example.snapupnoteproject.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,24 +21,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
+import com.example.snapupnoteproject.data.AuthRepository
+
+private const val TAG = "LoginScreen"
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
-
-    val auth = FirebaseAuth.getInstance()
+    val repo = remember { AuthRepository() }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text("Login")
 
         OutlinedTextField(
@@ -58,33 +56,45 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             onValueChange = { password = it },
             label = { Text("Senha") },
             visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { visible = !visible }) {
-                    Icon(
-                        imageVector = if (visible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Mostrar senha"
-                    )
-                }
-            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         )
 
         if (error.isNotEmpty()) {
-            Text(error, color = Color.Red)
+            Text(error, color = Color.Red, modifier = Modifier.padding(8.dp))
+        }
+
+        if (loading) {
+            CircularProgressIndicator(modifier = Modifier.padding(8.dp))
         }
 
         Button(
             onClick = {
-                auth.signInWithEmailAndPassword(email, password)
-                    .addOnSuccessListener {
-                        onLoginSuccess()
+                error = ""
+                if (email.isBlank() || password.isBlank()) {
+                    error = "Preencha email e senha"
+                    return@Button
+                }
+
+                loading = true
+                try {
+                    repo.login(email.trim(), password) { success, message ->
+                        loading = false
+                        if (success) {
+                            onLoginSuccess()
+                        } else {
+                            Log.e(TAG, "Login failed: $message")
+                            error = message ?: "Erro ao autenticar. Verifique suas credenciais."
+                        }
                     }
-                    .addOnFailureListener {
-                        error = "Email ou senha inválidos"
-                    }
-            }
+                } catch (ex: Exception) {
+                    loading = false
+                    Log.e(TAG, "Exception during login", ex)
+                    error = "Erro interno: ${ex.localizedMessage ?: "verifique logs"}"
+                }
+            },
+            modifier = Modifier.padding(top = 8.dp)
         ) {
             Text("Entrar")
         }
