@@ -29,7 +29,6 @@ class LoginViewModel(
             if (success) {
                 loginSuccess = true
             } else {
-                // repassa a mensagem de erro do Firebase quando disponível
                 error = message ?: "Email ou senha incorretos"
             }
         }

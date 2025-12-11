@@ -1,24 +1,27 @@
 package com.example.snapupnoteproject.ui
 
-import androidx.compose.foundation.background
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.snapupnoteproject.model.Card
 import com.example.snapupnoteproject.viewmodel.HomeViewModel
@@ -28,7 +31,12 @@ import com.example.snapupnoteproject.viewmodel.HomeViewModel
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
-    val cards = viewModel.cards
+    val cardsUnsorted = viewModel.cards
+    val cards = remember(cardsUnsorted.toList()) {
+        cardsUnsorted.sortedWith(compareByDescending<Card> { it.pinned }
+            .thenByDescending { it.createdAt?.seconds ?: 0L })
+    }
+
     var showCreateDialog by remember { mutableStateOf(false) }
     var showProfileMenu by remember { mutableStateOf(false) }
 
@@ -47,10 +55,9 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.AccountCircle,
                                 contentDescription = "Perfil",
-                                Modifier.size(100.dp)
+                                modifier = Modifier.size(40.dp)
                             )
                         }
-
                         DropdownMenu(
                             expanded = showProfileMenu,
                             onDismissRequest = { showProfileMenu = false },
@@ -60,7 +67,7 @@ fun HomeScreen(
                                 text = { Text("Sair") },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Default.Logout,
+                                        imageVector = Icons.AutoMirrored.Filled.Logout,
                                         contentDescription = "Sair"
                                     )
                                 },
@@ -75,20 +82,13 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            IconButton(
+            FloatingActionButton(
                 onClick = { showCreateDialog = true },
-                modifier = Modifier
-                    .padding(16.dp)
-                    .height(56.dp)
-                    .width(56.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(Color(0xFF8CB414))
+                containerColor = Color(147, 49, 204)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Adicionar card",
-                    tint = Color.White
-                )
+                Icon(imageVector = Icons.Default.Add,
+                    contentDescription = "Adicionar",
+                    tint = Color.White)
             }
         }
     ) { innerPadding ->
@@ -97,11 +97,16 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            HorizontalDivider(modifier = Modifier.height(12.dp))
-
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                thickness = 1.dp,
+                color = Color.LightGray
+            )
+            Spacer(modifier = Modifier.size(8.dp))
             if (cards.isEmpty()) {
                 Text(
-                    text = "Sua lista de lembranças está vazia!",
+                    text = "Sua lista está vazia.",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -109,19 +114,21 @@ fun HomeScreen(
                     color = Color(0xFF5A5A5A)
                 )
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                    columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
                     modifier = Modifier
-                        .padding(8.dp)
+                        .padding(horizontal = 8.dp)
                         .fillMaxWidth(),
-                    contentPadding = PaddingValues(4.dp),
+                    contentPadding = PaddingValues(6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(cards, key = { it.id }) { card ->
                         CardRow(
                             card = card,
-                            onDelete = { viewModel.deleteCard(card.id) }
+                            onDelete = { viewModel.deleteCard(card.id) },
+                            onToggleItem = { cardId, idx -> viewModel.toggleItemDone(cardId, idx) },
+                            onTogglePin = { cardId -> viewModel.togglePin(cardId) }
                         )
                     }
                 }
@@ -138,46 +145,100 @@ fun HomeScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
-fun CardRow(card: Card, onDelete: () -> Unit) {
+fun CardRow(
+    card: Card,
+    onDelete: () -> Unit,
+    onToggleItem: (String, Int) -> Unit = { _, _ -> },
+    onTogglePin: (String) -> Unit = {}
+) {
     Card(
         modifier = Modifier
-            .padding(6.dp)
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(card.color)
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        colors = CardDefaults.cardColors(containerColor = Color(card.color)),
+        shape = RoundedCornerShape(10.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(card.title.ifEmpty { "Sem título" }, style = MaterialTheme.typography.titleMedium)
-
-            if (card.items.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
+        Column(modifier = Modifier
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    card.items.joinToString(", "),
-                    style = MaterialTheme.typography.bodyMedium
+                    text = card.title.ifEmpty { "Sem título" },
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
+
+                IconButton(
+                    onClick = { onTogglePin(card.id) },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    if (card.pinned) {
+                        Icon(imageVector = Icons.Default.Bookmark, contentDescription = "Pinned")
+                    } else {
+                        Icon(imageVector = Icons.Outlined.BookmarkBorder, contentDescription = "Pin")
+                    }
+                }
             }
+            Spacer(modifier = Modifier.height(6.dp))
+            if (card.items.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 120.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    card.items.forEachIndexed { index, item ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp)
+                        ) {
+                            Checkbox(
+                                checked = item.done,
+                                onCheckedChange = { _ -> onToggleItem(card.id, index) },
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = item.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                softWrap = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 6.dp)
+                            )
+                        }
+                    }
+                }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            card.total?.let {
-                Text(
-                    text = "Total: R$ $it",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Excluir"
+                Spacer(modifier = Modifier.weight(1f))
+
+                card.total?.let {
+                    Text(
+                        text = "Total: R$ ${String.format("%.2f", it)}",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
+                        modifier = Modifier.padding(end = 8.dp)
                     )
+                }
+
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir")
                 }
             }
         }
